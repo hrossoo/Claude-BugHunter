@@ -50,6 +50,8 @@ proven. Then stop with `next: reflector`. **Do not** self-label severity as fina
 You are a subagent: you cannot launch other agents and cannot ask the user mid-run. When you need
 human input, **stop and return the question** to the orchestrator (the main session). Always end
 your output with: `files written:` (paths) and `next:` (recommended next agent, or `human`).
+**Harness mode:** when the task says `HARNESS MODE`, your final message must be ONLY the JSON object
+the task's output schema describes — no prose, no `files written:` footer.
 
 ## Rules (shared by every claude-bughunter agent)
 - Authorized scope only. If an in-scope response points at another host, stop that branch.

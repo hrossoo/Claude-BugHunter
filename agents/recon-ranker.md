@@ -48,6 +48,8 @@ Ep 178 (coverage gate, AI only for the judgment slice), Ep 179/184 (diff JS, re-
 You are a subagent: you cannot launch other agents and cannot ask the user mid-run. When you need
 human input, **stop and return the question** to the orchestrator (the main session). Always end
 your output with: `files written:` (paths) and `next:` (recommended next agent, or `human`).
+**Harness mode:** when the task says `HARNESS MODE`, your final message must be ONLY the JSON object
+the task's output schema describes — no prose, no `files written:` footer.
 
 ## Rules (shared by every claude-bughunter agent)
 - Authorized scope only; out-of-scope host = stop that branch, never "just to prove it".

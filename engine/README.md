@@ -64,6 +64,45 @@ python3 engine/recon.py https://target/ target.com
 Key flags: `--hunt` (opt into agents) · `--allow-intrusive` (default OFF = read-only) ·
 `--parallel N` (concurrent agents, default 3) · `--phases a,b,c` (explicit override).
 
+## Hackbot harness (`harness.py`): code-driven subagent pipeline
+
+`harness.py` runs the nine `agents/*.md` subagents as a pipeline. Deterministic code owns control flow, scope, coverage and evidence. Each judgment step is one headless `claude -p` subagent. This is the pattern the Critical Thinking podcast hackbots converged on; see [`docs/ctbb-claude-playbook.md`](../docs/ctbb-claude-playbook.md).
+
+```
+recon + rank (this engine, deterministic) → recon-ranker → threat-modeler → hunter ×N
+  → reflector → escalator → validator → poc-builder → report-writer → skill-distiller
+```
+
+```bash
+python3 engine/harness.py --scope my-engagement.json --proxy http://127.0.0.1:8080        # paranoid (default)
+python3 engine/harness.py --scope my-engagement.json --checkpoint normal --parallel 4
+python3 engine/harness.py --scope my-engagement.json --status        # phase, coverage, findings by stage
+python3 engine/harness.py --scope my-engagement.json --watch         # tmux: live log + status panes
+python3 engine/harness.py --scope engine/engagement.example.json --mock --base /tmp/hb   # offline dry run
+python3 engine/harness.py --scope my-engagement.json --from poc --until poc --only F02   # rebuild one PoC
+```
+
+### Enforced in code, not in prompts
+
+| Gate | How |
+|---|---|
+| **Scope** | Every agent runs with a generated `--settings` that installs `hooks/scope_guard.py` as a `PreToolUse` hook on `Bash` and `WebFetch`. The hook blocks (exit 2) three things: requests to hosts outside the scope JSON (deny wins), `PUT`/`PATCH`/`DELETE` unless `--allow-intrusive` is set, and recursive deletes outside the engagement folder. The proxy host is always allowed. |
+| **Evidence** | Agents must save each request to `evidence/requests/<op-id>.txt`. A candidate whose op IDs aren't in the store is rejected **before** any LLM judges it (`evidence.py`). The check runs again before validation. Off-scope hosts that appear in the evidence are flagged. |
+| **Coverage** | Each hunter claims explicit rows. Each row must come back `tested-negative` or `candidate` with real op IDs, or `blocked:<reason>`. Uncovered rows are re-dispatched with a scope-restating "keep going" nudge, up to `--max-nudges` times. Rows still uncovered after that, and blocked rows, are surfaced at the checkpoint. They are never counted as tested. |
+| **Structure** | Each agent's prompt is loaded from `agents/<name>.md` through `--agents`/`--agent`, so no install is needed and the prompt matches this checkout. Each agent returns schema-shaped JSON, enforced with `--json-schema`. Prose answers get one repair call: the harness resumes the same session and asks for the JSON only. |
+| **Checkpoints** | The run stops for review after the phases set by the mode: `paranoid` stops after threat-model, reflect and validate; `normal` after validate; `yolo` never. It also stops whenever it needs you: the threat-modeler's account-setup question, or `findings/<id>.summary.md` for each report. Re-run the same command to resume from the saved phase. `--from <phase>` re-runs from a given phase. |
+
+### What you get in the engagement folder (`~/.bughunter-engagements/<name>/`)
+- `notes/CHECKPOINT.md`: why the run stopped, coverage numbers, blocked and uncovered rows, findings by stage, and a `claude --resume <id>` line for every agent session, so you can open any agent's conversation with full context.
+- `notes.md`: Gadgets (chaining them is your job), Dead ends, Validator rejections, Hidden headers, and Questions for the human.
+- `notes/app-book.md`, `findings/`, `pocs/`, `evidence/requests/`, `logs/<session>.json` (raw agent output), `.harness/settings.json` (the hook config).
+- Confirmed findings are also written to the ledger (`memory.py`), so `/pickup`, `/remember` and `/memory-gc` see them.
+
+Defaults:
+- Agents load no skills unless you pass `--skills`; the measured gain is about 0, at a cost of roughly 12–15k tokens per agent.
+- The model is your Claude Code default unless you pass `--model`.
+- Reports are never submitted.
+
 ## Safety
 - **Read-only by default** — hunt/validate agents are told: in-scope hosts only (never
   third-party, even to prove a finding), and no state-changing actions (no emails/writes/

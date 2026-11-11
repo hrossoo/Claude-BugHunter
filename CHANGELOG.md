@@ -24,6 +24,19 @@ versioning is loosely [SemVer](https://semver.org/) at the bundle level.
     tracks them.
   - `hunt` scaffolds `pocs/` and `notes/`.
   - `lint_skills.py` now lints agent front matter: single-line description, no pinned model IDs.
+- **Code-driven hackbot harness (`engine/harness.py`)**: runs the nine agents as a resumable pipeline
+  on top of the engine's deterministic recon and ranking.
+  - Each agent's prompt is loaded from `agents/*.md` via `claude -p --agents/--agent`.
+  - Every agent returns schema-checked JSON, with one repair call if it answers in prose.
+  - `engine/hooks/scope_guard.py`: a PreToolUse hook that blocks off-scope hosts, state-changing
+    methods in read-only runs, and deletes outside the engagement folder.
+  - `engine/evidence.py`: an op-ID evidence store and a coverage gate. Rows reported as tested with no
+    evidence are re-dispatched with a keep-going nudge.
+  - Checkpoint modes: paranoid, normal and yolo.
+  - `notes/CHECKPOINT.md` lists a `claude --resume` line for every agent session.
+  - `--status`, `--watch` (tmux) and an offline `--mock` mode.
+  - New CI workflow `harness-selftest.yml`.
+  - New flags: `--only <IDs>` and `--until <phase>`.
 - **Disclosed-report grounding, content-verified** — 28 `hunt-*` skills strengthened
   with cited public HackerOne disclosures. **433 distinct disclosed reports** are now
   individually cited across **36 pattern-library files** in `docs/disclosed-reports/`.

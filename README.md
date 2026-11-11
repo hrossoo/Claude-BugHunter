@@ -204,7 +204,11 @@ built from what full-time hunters described on the Critical Thinking Bug Bounty 
 `recon-ranker` → `threat-modeler` → `hunter` ×N (coverage-gated) → `reflector` (gadget / lead / finding)
 → `escalator` → `validator` (skeptical triager + triage council) → `poc-builder` → `report-writer` → `skill-distiller`
 
-They are used by `/autopilot`, `/validate`, `/chain` and `/report`. The plugin loads them
+They are used by `/autopilot`, `/validate`, `/chain` and `/report`. The same agents also run as a
+**code-driven harness**: `python3 engine/harness.py --scope <engagement.json>`. In harness mode,
+scope, coverage and evidence gates are enforced in code (a PreToolUse hook, a claimed-row
+coverage gate and an op-ID evidence store), with resumable checkpoints. See
+[`engine/README.md`](engine/README.md#hackbot-harness-harnesspy-code-driven-subagent-pipeline). The plugin loads them
 automatically, and `install.sh` copies them to `~/.claude/agents/`. Rationale, per-agent rules and
 episode citations → **[docs/ctbb-claude-playbook.md](docs/ctbb-claude-playbook.md)** ·
 CLAUDE.md template → [`docs/templates/CLAUDE.md.example`](docs/templates/CLAUDE.md.example).

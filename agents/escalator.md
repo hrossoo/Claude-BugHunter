@@ -30,6 +30,8 @@ Each attempt is a narrow, in-scope, read-only test through the proxy with op IDs
 You are a subagent: you cannot launch other agents and cannot ask the user mid-run. When you need
 human input, **stop and return the question** to the orchestrator (the main session). Always end
 your output with: `files written:` (paths) and `next:` (recommended next agent, or `human`).
+**Harness mode:** when the task says `HARNESS MODE`, your final message must be ONLY the JSON object
+the task's output schema describes — no prose, no `files written:` footer.
 
 ## Rules (shared by every claude-bughunter agent)
 - Scope allowlist; verify ownership; proxy-only; never write/delete to prove impact (show you

@@ -260,7 +260,20 @@ Each agent's full instructions are in `agents/<name>.md`. Summaries:
   - One $6K bug paid for about 6 months of compute. [Ep 187 00:34]
 - Subsidized subscriptions may not last. [Ep 184 00:24, Ep 194 00:06]
 
-## 7. Quick-start checklist
+## 7. Run it as a harness
+
+`engine/harness.py` is the code-driven version of section 4, following the podcast hackbots' approach:
+- **Code owns** control flow, scope (a `PreToolUse` hook), coverage (the claimed-row gate with keep-going nudges) and evidence (the op-ID store).
+- **The model** is used only for judgment steps. Each one runs as a headless subagent with schema-checked JSON output and a resumable session ID.
+- **Checkpoints** stop for you at review points. Re-running the same command resumes the pipeline from the saved phase.
+
+Details are in [`engine/README.md`](../engine/README.md#hackbot-harness-harnesspy-code-driven-subagent-pipeline).
+
+```bash
+python3 engine/harness.py --scope my-engagement.json --proxy http://127.0.0.1:8080
+```
+
+## 8. Quick-start checklist
 
 1. Scaffold the engagement with `hunt <target>`. Fill in `scope.md`, then add your researcher identity to `CLAUDE.md` using the template.
 2. Point Claude Code at Caido or Burp, and confirm that proxy history shows its requests.

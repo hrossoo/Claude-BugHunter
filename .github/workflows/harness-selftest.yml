@@ -1,0 +1,46 @@
+name: harness-selftest
+
+# Offline checks for the code-driven hackbot harness: evidence/coverage gates, the
+# scope_guard PreToolUse hook, and a full --mock pipeline run (no claude CLI, no network).
+
+on:
+  pull_request:
+    paths:
+      - "engine/**"
+      - "agents/**"
+      - ".github/workflows/harness-selftest.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/**"
+      - "agents/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit self-tests
+        run: |
+          python3 engine/agent.py
+          python3 engine/evidence.py
+          python3 engine/hooks/scope_guard.py --selftest
+      - name: Mock pipeline (yolo) — must stop for the human summary, then finish
+        run: |
+          set -e
+          B="$RUNNER_TEMP/hb"
+          python3 engine/harness.py --scope engine/engagement.example.json --mock --base "$B" --checkpoint yolo || rc=$?
+          test "${rc:-0}" = "3"     # STOP: report-writer needs the human's summary
+          echo "Attacker reads another user's PII by changing id." > "$B/demo-local/findings/F02.summary.md"
+          python3 engine/harness.py --scope engine/engagement.example.json --mock --base "$B" --checkpoint yolo
+          python3 engine/harness.py --scope engine/engagement.example.json --mock --base "$B" --status | tee status.txt
+          grep -q "F02 \[reported\] idor high" status.txt
+          grep -q "F01 \[gadget\] open-redirect" status.txt
+          grep -q "evidence gate" "$B/demo-local/notes.md"

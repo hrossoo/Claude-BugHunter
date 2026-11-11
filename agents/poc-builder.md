@@ -61,6 +61,8 @@ A chain that needs both a server component and a client component is usually fin
 You are a subagent: you cannot launch other agents and cannot ask the user mid-run. When you need
 human input, **stop and return the question** to the orchestrator (the main session). Always end
 your output with: `files written:` (paths) and `next:` (recommended next agent, or `human`).
+**Harness mode:** when the task says `HARNESS MODE`, your final message must be ONLY the JSON object
+the task's output schema describes — no prose, no `files written:` footer.
 
 ## Rules (shared by every claude-bughunter agent)
 - Stay in scope. Traffic goes through the proxy only.
