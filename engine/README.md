@@ -70,7 +70,7 @@ Key flags: `--hunt` (opt into agents) · `--allow-intrusive` (default OFF = read
 
 ```
 recon + rank (this engine, deterministic) → recon-ranker → threat-modeler → hunter ×N
-  → reflector → escalator → validator → poc-builder → report-writer → skill-distiller
+  → reflector → escalator → validator → poc-builder → video → report-writer → skill-distiller
 ```
 
 ```bash
@@ -79,7 +79,7 @@ python3 engine/harness.py --scope my-engagement.json --checkpoint normal --paral
 python3 engine/harness.py --scope my-engagement.json --status        # phase, coverage, findings by stage
 python3 engine/harness.py --scope my-engagement.json --watch         # tmux: live log + status panes
 python3 engine/harness.py --scope engine/engagement.example.json --mock --base /tmp/hb   # offline dry run
-python3 engine/harness.py --scope my-engagement.json --from poc --until poc --only F02   # rebuild one PoC
+python3 engine/harness.py --scope my-engagement.json --from video --until video --only F02   # re-film one finding
 ```
 
 ### Enforced in code, not in prompts
@@ -90,6 +90,7 @@ python3 engine/harness.py --scope my-engagement.json --from poc --until poc --on
 | **Evidence** | Agents must save each request to `evidence/requests/<op-id>.txt`. A candidate whose op IDs aren't in the store is rejected **before** any LLM judges it (`evidence.py`). The check runs again before validation. Off-scope hosts that appear in the evidence are flagged. |
 | **Coverage** | Each hunter claims explicit rows. Each row must come back `tested-negative` or `candidate` with real op IDs, or `blocked:<reason>`. Uncovered rows are re-dispatched with a scope-restating "keep going" nudge, up to `--max-nudges` times. Rows still uncovered after that, and blocked rows, are surfaced at the checkpoint. They are never counted as tested. |
 | **Structure** | Each agent's prompt is loaded from `agents/<name>.md` through `--agents`/`--agent`, so no install is needed and the prompt matches this checkout. Each agent returns schema-shaped JSON, enforced with `--json-schema`. Prose answers get one repair call: the harness resumes the same session and asks for the JSON only. |
+| **PoC video** | The `video` phase asks the poc-builder for a storyboard: captioned steps in the target's own UI. `video/record.js` (Node + Playwright) then films it deterministically. Off-scope browser requests are aborted in code, and PUT/PATCH/DELETE are blocked in read-only runs. The video ends with a typed-out replay of the PoC run output and a summary card, so API-only bugs get one too. The result is converted to MP4 with ffmpeg and passed to the report-writer. Skip it with `--no-video`; point it at a Playwright install with `HARNESS_PLAYWRIGHT_NODE_PATH`. |
 | **Checkpoints** | The run stops for review after the phases set by the mode: `paranoid` stops after threat-model, reflect and validate; `normal` after validate; `yolo` never. It also stops whenever it needs you: the threat-modeler's account-setup question, or `findings/<id>.summary.md` for each report. Re-run the same command to resume from the saved phase. `--from <phase>` re-runs from a given phase. |
 
 ### What you get in the engagement folder (`~/.bughunter-engagements/<name>/`)

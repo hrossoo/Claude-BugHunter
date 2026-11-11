@@ -54,8 +54,20 @@ A chain that needs both a server component and a client component is usually fin
 1. Write the PoC into `pocs/<finding-slug>/`.
 2. **Run it exactly as the triager will** (the `curl | python3` one-liner, or a headless browser for HTML) through the proxy. Fix it until it passes cleanly.
 3. Save the run output to `pocs/<finding-slug>/run-<date>.txt`. For client-side bugs, save headless screenshots.
-4. Write a short video checklist (≤2 minutes, showing what to click) for the human to record. Video PoCs perform best with triagers.
+4. Write a short video checklist (≤2 minutes, showing what to click). In the harness, a separate `video` phase asks you for a storyboard and records the video itself (see below). Video PoCs perform best with triagers.
 5. Hosting the PoC is done by the human: it goes in an obscure path, optionally behind a password.
+
+## Video storyboard mode
+When the task says `VIDEO STORYBOARD MODE`, you write no code and change no state. Instead you return a
+storyboard that the harness recorder (`engine/video/record.js`) films deterministically:
+- Steps act in the target's **own web UI**: baseline (the attacker is refused) → exploit → proof.
+- Each step has a short caption, shown **before** the action, and a label like `2 · EXPLOIT`.
+- Allowed actions: `goto`, `type`, `fill`, `click`, `press`, `waitFor`, `wait`, `scroll`, `caption`.
+- Use in-scope URLs only. The recorder aborts every off-scope browser request.
+- Never put passwords or tokens in a caption.
+- Use `cookies` to pre-dismiss consent and welcome banners, and `hide_selectors` for UI noise.
+- If the bug isn't visible in a UI (a pure API bug), set `ui_visible: false`. The video then replays
+  the PoC run output and a summary card.
 
 ## Orchestration contract
 You are a subagent: you cannot launch other agents and cannot ask the user mid-run. When you need

@@ -36,6 +36,9 @@ versioning is loosely [SemVer](https://semver.org/) at the bundle level.
   - `notes/CHECKPOINT.md` lists a `claude --resume` line for every agent session.
   - `--status`, `--watch` (tmux) and an offline `--mock` mode.
   - New CI workflow `harness-selftest.yml`.
+  - New `video` phase (`engine/video.py`, `engine/video/record.js`). The poc-builder supplies a captioned
+    storyboard and the recorder films it in code: off-scope requests aborted, read-only respected,
+    PoC-output replay and summary card, MP4 output.
   - New flags: `--only <IDs>` and `--until <phase>`.
 - **Disclosed-report grounding, content-verified** — 28 `hunt-*` skills strengthened
   with cited public HackerOne disclosures. **433 distinct disclosed reports** are now

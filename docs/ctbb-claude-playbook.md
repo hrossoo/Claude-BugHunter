@@ -176,7 +176,7 @@ Each agent's full instructions are in `agents/<name>.md`. Summaries:
   - Prints a `VULNERABLE` / `NOT VULNERABLE` verdict, so it doubles as a retest.
 - **Run it exactly as the triager will.** Save the output to a txt file. Take screenshots for client-side bugs.
 - Common failures: scripts that only print and never send requests, third-party dependencies, and "user 1" naming.
-- Video PoCs are now expected. [Ep 170 00:16, Ep 173 00:45, Ep 179 00:28, Ep 194 00:08]
+- Video PoCs are now expected. [Ep 170 00:16, Ep 173 00:45, Ep 179 00:28, Ep 194 00:08] In the harness, the `video` phase films one automatically from a poc-builder storyboard (`engine/video/record.js`).
 
 ### report-writer: short, human, PoC-first
 - The human writes a short summary first, and the model fits it to the platform format. [Ep 183 00:02]

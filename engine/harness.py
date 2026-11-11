@@ -45,9 +45,10 @@ from state import Engagement       # noqa: E402
 import agent as A                  # noqa: E402
 import evidence as EV              # noqa: E402
 import memory                      # noqa: E402
+import video as VID                # noqa: E402
 
 PHASES = ["recon", "recon_ranker", "threat_model", "hunt", "reflect", "escalate",
-          "validate", "poc", "report", "distill"]
+          "validate", "poc", "video", "report", "distill"]
 CHECKPOINTS = {"paranoid": {"threat_model", "reflect", "validate"},
                "normal": {"validate"},
                "yolo": set()}
@@ -92,6 +93,7 @@ SCHEMAS = {
         "notes": S_STR, "video_checklist": S_STR}},
     "report-writer": {"type": "object", "required": ["report_path"], "properties": {
         "report_path": S_STR, "needs_human": {"type": ["string", "null"]}, "rubric_pass": {"type": "boolean"}}},
+    "storyboard": VID.STORYBOARD_SCHEMA,
     "skill-distiller": {"type": "object", "required": ["proposal_path"], "properties": {
         "proposal_path": S_STR, "items": {"type": "integer"}}},
 }
@@ -524,6 +526,65 @@ class Harness:
                      f"{'VERIFIED (run output says VULNERABLE)' if proven else '⚠ run output missing or not VULNERABLE'}")
         self.save()
 
+    def p_video(self):
+        """PoC video: the poc-builder writes a storyboard (captions + browser steps in the target's own
+        UI); engine/video/record.js films it deterministically — off-scope browser requests are aborted
+        in code — then replays the PoC run output and a summary card. API-only bugs still get a video."""
+        todo = [f for f in self.stage("poc", "reported") if not (f.get("video") or {}).get("path")]
+        if self.a.no_video or not todo:
+            return
+        node_path = None if self.a.mock else VID.find_playwright()
+        if not node_path:
+            self.log("video: skipped (mock mode, or node + playwright not found — set HARNESS_PLAYWRIGHT_NODE_PATH)")
+            return
+        jobs = [("poc-builder", f"VIDEO STORYBOARD MODE for {f['id']} ({f['file']}, PoC {f['poc'].get('path', '')}). "
+                 "Do not change any state; you may GET pages/JS through the proxy only to find selectors. Return a "
+                 "storyboard of browser steps in the target's OWN web UI showing baseline -> exploit -> proof, each "
+                 "step with a short caption (shown BEFORE the action) and a label like '1 · BASELINE'. Allowed "
+                 f"actions: {', '.join(sorted(VID.ACTIONS))}. In-scope URLs only. Test-account secrets come from "
+                 ".harness/accounts.json and must never appear in captions. Add cookies to dismiss consent/welcome "
+                 "banners and hide_selectors for UI noise. If the bug is not visible in the UI (pure API), set "
+                 "ui_visible=false and omit steps — the recorder still films the PoC run output. Give 3–4 summary "
+                 "bullets (class, payload, impact, CVSS, fix).", f["id"], f, "storyboard")
+                for f in todo]
+        boards = []
+        for f, r, rec in self.parallel(jobs):
+            if self.failed(r, f"storyboard {f['id']}"):
+                continue
+            boards.append((f, r["data"]))
+        for f, sb in boards:                                     # record sequentially: browsers are heavy
+            steps, dropped = VID.clean_steps(sb.get("steps") if sb.get("ui_visible") else [], self.scope)
+            for d in dropped:
+                self.log(f"  video {f['id']}: dropped step ({d})")
+            pdir = os.path.dirname(os.path.join(self.dir, f["poc"].get("path") or f"pocs/{f['id'].lower()}/x"))
+            ro = os.path.join(self.dir, f["poc"].get("run_output") or "")
+            base = next((st["url"] for st in steps if st.get("action") == "goto"), self.scope.seeds[0] if self.scope.seeds else "")
+            v = f.get("validator") or {}
+            job = {"out": os.path.join(pdir, f"{f['id'].lower()}-poc.webm"),
+                   "title": sb.get("title") or f["title"],
+                   "subtitle": sb.get("subtitle") or f"{f['vuln_class']} · {f.get('severity', '')} · {f['url']}",
+                   "scope": {"in": self.scope.in_scope, "out": self.scope.out_of_scope},
+                   "proxy": self.a.proxy or "", "intrusive": bool(self.a.allow_intrusive),
+                   "hide_selectors": sb.get("hide_selectors") or [],
+                   "cookies": [{"name": c.get("name"), "value": c.get("value", ""), "url": base}
+                               for c in (sb.get("cookies") or []) if c.get("name") and base],
+                   "steps": steps,
+                   "run_output": open(ro, encoding="utf-8", errors="replace").read() if os.path.isfile(ro) else "",
+                   "poc_command": f["poc"].get("command_unix") or "python3 poc.py",
+                   "summary": sb.get("summary") or [f["title"], f"Severity: {f.get('severity', '')} {v.get('cvss', '')}"]}
+            path, res = VID.record(job, node_path)
+            if not path:
+                self.log(f"  video {f['id']}: recording FAILED — {res.get('error', '?')[:200]}")
+                self.note("Questions for the human", f"{f['id']}: PoC video failed — record it by hand")
+                continue
+            bad = [st for st in res.get("steps", []) if not st.get("ok")]
+            f["video"] = {"path": os.path.relpath(path, self.dir), "ui": bool(steps),
+                          "failed_steps": bad, "blocked_hosts": res.get("blocked_hosts", [])}
+            self.log(f"  video {f['id']}: {f['video']['path']} ({'UI + ' if steps else ''}PoC replay"
+                     f"{f'; {len(bad)} step(s) failed — review before attaching' if bad else ''}"
+                     f"{'; blocked off-scope: ' + ', '.join(res['blocked_hosts']) if res.get('blocked_hosts') else ''})")
+        self.save()
+
     def _run_output_path(self, f, d):
         """Find the saved PoC run output: the schema field if it is a real path, else a path mentioned in
         it, else the newest run*.txt in this finding's PoC folder."""
@@ -556,7 +617,8 @@ class Harness:
             if not ready:
                 return STOP
         jobs = [("report-writer", f"Write the report for {f['id']} ({f['file']}). Human summary: "
-                 f"findings/{f['id']}.summary.md. PoC: {json.dumps(f.get('poc', {}))}.", f["id"], f) for f in ready]
+                 f"findings/{f['id']}.summary.md. PoC: {json.dumps(f.get('poc', {}))}. "
+                 f"Video: {(f.get('video') or {}).get('path') or 'none — say so'}.", f["id"], f) for f in ready]
         for f, r, rec in self.parallel(jobs):
             if self.failed(r, f"report-writer {f['id']}"):
                 continue
@@ -748,7 +810,8 @@ def main(argv=None):
     ap.add_argument("--skills", action="store_true", help="let agents load skills (off by default: ~0 gain, ~12-15k tokens each)")
     ap.add_argument("--allow-intrusive", action="store_true", help="permit PUT/PATCH/DELETE (default read-only)")
     ap.add_argument("--from", dest="from_phase", choices=PHASES, help="re-run from this phase")
-    ap.add_argument("--only", default="", help="comma-separated finding IDs to limit poc/report phases (e.g. F02)")
+    ap.add_argument("--only", default="", help="comma-separated finding IDs to limit poc/video/report phases (e.g. F02)")
+    ap.add_argument("--no-video", action="store_true", help="skip the PoC video phase")
     ap.add_argument("--until", choices=PHASES, help="stop after this phase")
     ap.add_argument("--recon-again", action="store_true", help="redo deterministic recon even if surface exists")
     ap.add_argument("--mock", action="store_true", help="offline dry-run with canned agent output")

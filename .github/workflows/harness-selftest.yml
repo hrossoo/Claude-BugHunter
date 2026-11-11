@@ -32,6 +32,8 @@ jobs:
           python3 engine/agent.py
           python3 engine/evidence.py
           python3 engine/hooks/scope_guard.py --selftest
+          python3 engine/video.py
+          node --check engine/video/record.js
       - name: Mock pipeline (yolo) — must stop for the human summary, then finish
         run: |
           set -e
