@@ -14,6 +14,13 @@ Run full validation on the current finding before writing a report.
 3. Runs 4 pre-submission gates
 4. Outputs: PASS (write the report) or KILL (move on)
 
+## Subagent
+
+If the `validator` subagent is installed, delegate to it: it independently replays the finding through
+the proxy, rejects claims without operation-ID evidence, applies the class proof bars in
+`skills/triage-validation` ("CLASS PROOF BARS"), runs a 3-persona triage council, then the gates
+below. Run `escalator` first (`/chain`) so a validated finding carries its highest provable severity.
+
 ## Usage
 
 ```

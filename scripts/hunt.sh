@@ -36,7 +36,7 @@ hunt() {
     return 0
   fi
 
-  mkdir -p "$dir/findings" "$dir/evidence"
+  mkdir -p "$dir/findings" "$dir/evidence" "$dir/pocs" "$dir/notes"
 
   # ============== CLAUDE.md ==============
   # Write heading lines that require $target interpolation explicitly,
@@ -57,7 +57,9 @@ Files in this folder:
 - `findings/` — one markdown file per finding draft (naming: `finding-<NN>-<short-name>.md`)
 - `submissions.txt` — submission IDs tracker (used for chain cross-references)
 - `evidence/` — screenshots, HARs, raw transcripts (gitignored — never share)
-- `notes.md` — running notes, leads, dead ends, hypotheses
+- `notes.md` — running notes, leads, dead ends, hypotheses, coverage checklist, gadgets
+- `notes/app-book.md` — threat model / app "book" written by the `threat-modeler` agent
+- `pocs/` — self-contained PoC scripts + HTML pages and their run output (`poc-builder` agent)
 
 ## Workflow
 

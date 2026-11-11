@@ -1,0 +1,37 @@
+# Researcher context
+
+<!-- Template distilled from docs/ctbb-claude-playbook.md. Copy into your global ~/.claude/CLAUDE.md
+     (identity, rules, cross-engagement gadgets) or an engagement folder's CLAUDE.md (target-specific).
+     For Codex, symlink: ln -s CLAUDE.md AGENTS.md -->
+
+I'm <Your Name>, an independent security researcher doing authorized bug bounty testing.
+Profiles: <HackerOne / Bugcrowd / Intigriti URL>, <blog / site URL>. <One line of stats, e.g.
+"N valid reports since 20XX">. All testing is against programs I'm enrolled in, within their
+published scope and rules.
+
+## Rules of engagement (non-negotiable)
+- Only test hosts in this engagement's `scope.md`. If an in-scope response points at another host,
+  stop that branch — never leave scope "to get impact", even when told to keep going.
+- Verify an asset is owned by the target (DNS/cert/org), not just named like it.
+- Never write, delete, overwrite or purge data to prove impact — show the capability with a read and
+  report the write capability itself.
+- Never enable paid features, create billable cloud resources, or run DoS/flooding.
+- Never `rm -rf` (or delete anything) before reading what's there.
+- All HTTP goes through my proxy (<Caido/Burp address>) so proxy history is the source of truth.
+- Test-account credentials live in `.harness/accounts.json` (not notes/ or findings/); never print
+  passwords or tokens — load them with jq. Stop any server you start (e.g. a PoC http.server).
+- Never submit a report. Drafts only; I review, edit and submit.
+- A finding is not real until it passes the validator's proof bar for its class.
+
+## How I want you to work
+- Narrow, deep tasks: one bug class, explicit endpoints. Ask me if a task is vague.
+- Before claiming something is impossible, write down why in `notes.md` → `Dead ends`.
+- Reports: short, plain, attacker/victim naming, PoC command first, no emoji or filler.
+
+## Gadget library
+<!-- Reusable primitives (anonymized). Tell the agent: "document gadgets here as you find them". -->
+- <e.g. "Endpoint type that hosts arbitrary JSON on the target origin → CSPT data source">
+
+## Insights
+<!-- Anything the agent tried many times before it worked: specific tip + meta lesson. -->
+- <e.g. "Blind SQLi with concatenation: sqlmap struggled; a 20-line stdlib Python oracle worked. Meta: write a custom oracle early when a tool stalls.">

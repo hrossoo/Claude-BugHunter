@@ -280,6 +280,33 @@ Build the chain first, prove it works end to end, THEN report.
 
 ---
 
+## CLASS PROOF BARS (agent / hackbot output)
+
+Machine-found candidates over-claim. Before a finding passes, the evidence must clear the bar for
+its class. Sources: CTBB podcast Ep 178, 182, 196, 197, 199 (see `docs/ctbb-claude-playbook.md`).
+
+| Class | Minimum proof — anything less is a lead, not a finding |
+|---|---|
+| SSRF | Reaches an **internal** service/metadata and returns data — an external DNS/HTTP callback alone is not enough |
+| XSS | JS **executes** in the target origin (set + read back a global, or `document.domain`) — reflection is not execution |
+| ATO / session takeover | A request is made **as the victim** with the stolen credential — unexecuted XSS is not ATO |
+| IDOR / authz | Victim-owned object read/changed with attacker auth; every role × function permutation accounted for |
+| Auth bypass | Protected **data** reached — a status flip (403→401, 200 with an empty shell) is not a bypass |
+| RCE | OOB callback **arrives** or command output is returned |
+| Info disclosure | Data is sensitive **and real** (not a fixture / hardcoded test string); bare ID enumeration is not a bug |
+
+**Evidence integrity rules**
+- **Proxy history is ground truth.** Every claim cites a request that actually exists in Caido/Burp
+  history (or the engine evidence store). Agents have reported "tested, nothing found" with zero
+  requests sent.
+- **Operation-ID rule.** Each agent request carries an op ID (`X-Op-Id`) and is saved to
+  `evidence/requests/<op-id>.txt`; a claim without an op ID behind it is struck. This one rule removed ~90% of hackbot noise in brutecat's setup (Ep 178).
+- **Asset ownership.** Confirm the host belongs to the program (DNS / cert / org), not just its name.
+
+The `validator` subagent (`agents/validator.md`) applies these bars plus the 7-Question Gate.
+
+---
+
 ## KILL FAST RULES
 
 The goal is to QUICKLY disqualify bad leads so you hunt real bugs:

@@ -60,6 +60,7 @@ pwsh ./scripts/install.ps1
 This copies:
 - All 83 skills → `~/.claude/skills/` (macOS/Linux) or `%USERPROFILE%\.claude\skills\` (Windows)
 - All 15 slash commands → `~/.claude/commands/`
+- The 9 subagents (`agents/*.md`) → `~/.claude/agents/` (Claude Code only — verify with `/agents`)
 - The `hunt` scaffolder → `~/.claude/scripts/hunt.sh` (sourced from your `.zshrc`/`.bashrc`) on macOS/Linux, or `~\.claude\scripts\hunt.ps1` (dot-sourced from your PowerShell `$PROFILE`) on Windows
 
 Existing skills with the same name are backed up to `~/.claude/install-backups/<timestamp>/` — **outside** the skills/commands directories, so backups never load as duplicate skills. Re-runs are non-destructive.
@@ -251,7 +252,7 @@ bash scripts/install.sh --uninstall
 pwsh ./scripts/install.ps1 -Uninstall
 ```
 
-This removes the bundle's skills, slash commands, the `hunt.sh`/`hunt.ps1` script, and its
+This removes the bundle's skills, slash commands, subagents, the `hunt.sh`/`hunt.ps1` script, and its
 shell-rc source line. Skills you also installed from the **sister bundle**
 [Claude-OSINT](https://github.com/elementalsouls/Claude-OSINT) — `offensive-osint`
 and `osint-methodology` — are **kept** if Claude-OSINT's manifest still claims them,

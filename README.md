@@ -196,6 +196,19 @@ A 6-phase, non-linear workflow — **recon → map & rank → hunt → validate 
 
 → [Usage guide & worked example](USAGE.md) · [6-phase architecture & skill-to-phase map](docs/architecture.md) · [`cbh` CLI](docs/cbh-cli.md)
 
+### Subagents (hackbot pipeline)
+
+Nine Claude Code subagents in [`agents/`](agents/) turn the workflow into a hackbot-style pipeline,
+built from what full-time hunters described on the Critical Thinking Bug Bounty podcast (Ep 170–199):
+
+`recon-ranker` → `threat-modeler` → `hunter` ×N (coverage-gated) → `reflector` (gadget / lead / finding)
+→ `escalator` → `validator` (skeptical triager + triage council) → `poc-builder` → `report-writer` → `skill-distiller`
+
+They are used by `/autopilot`, `/validate`, `/chain` and `/report`. The plugin loads them
+automatically, and `install.sh` copies them to `~/.claude/agents/`. Rationale, per-agent rules and
+episode citations → **[docs/ctbb-claude-playbook.md](docs/ctbb-claude-playbook.md)** ·
+CLAUDE.md template → [`docs/templates/CLAUDE.md.example`](docs/templates/CLAUDE.md.example).
+
 ---
 ## Authorization
 
@@ -236,6 +249,7 @@ for exactly this reason — engagement context belongs in the session explicitly
 | [`INSTALL.md`](INSTALL.md) | Full setup with Burp MCP integration and optional skill regenerator |
 | [`USAGE.md`](USAGE.md) | Workflow walkthrough · decision tree · worked engagement example |
 | [`docs/architecture.md`](docs/architecture.md) | 6-phase architecture · skill-to-phase mapping · engagement composition |
+| [`docs/ctbb-claude-playbook.md`](docs/ctbb-claude-playbook.md) | Claude-for-bug-bounty playbook from the Critical Thinking podcast (Ep 170–199) · per-subagent guidelines for `agents/` |
 | [`docs/cbh-cli.md`](docs/cbh-cli.md) | `cbh` CLI — native runner orchestrating recon + classify + triage + report |
 | [`docs/cve-coverage.md`](docs/cve-coverage.md) | CISA KEV coverage snapshot — refreshed weekly via the workflow template at `docs/automation/cve-refresh.yml.template` |
 | [`docs/credits.md`](docs/credits.md) | Full attribution: 43 original skills + 8 vendored from upstream |

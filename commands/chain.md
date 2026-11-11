@@ -14,6 +14,13 @@ After confirming a standalone finding that:
 - Has been validated but classified as Low
 - Could be Medium or High if combined with another finding
 
+## Subagent
+
+If installed, delegate to `escalator`: it walks the ladder (unauthenticated reach → cross-tenant →
+ATO → chain with a logged gadget from `notes.md` `## Gadgets` → blast radius) and appends results to
+the **same** finding file, so an escalation is never filed as a separate dupe. Multi-step chains are
+where models are weakest — expect to direct it one goal at a time.
+
 ## Usage
 
 ```

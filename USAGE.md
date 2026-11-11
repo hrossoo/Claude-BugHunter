@@ -285,6 +285,8 @@ Required for external red-team work where targets are full enterprise estates ra
 | **Anthropic API (separate from Claude Max)** | Powers `public-skills-builder` for periodic skill regeneration | `console.anthropic.com/billing` → API key → `export ANTHROPIC_API_KEY=...` |
 | **HackerOne API** | Pulls disclosed reports for the skill builder | `hackerone.com/settings/api_token` → `H1_API_KEY=username:token` in `.env` |
 
+| **Subagents (`agents/`)** | Hackbot pipeline: recon-ranker → threat-modeler → hunter ×N → reflector → escalator → validator → poc-builder → report-writer → skill-distiller. Guidelines and sources: [`docs/ctbb-claude-playbook.md`](docs/ctbb-claude-playbook.md) | Plugin: automatic · copy install: `install.sh` → `~/.claude/agents/` · check with `/agents` |
+
 **Important — Claude Max ≠ API.** Claude Max gives you Claude Code + chat. The Anthropic API is pay-per-token, billed separately. You need both keys if you want to run skill-generation tools.
 
 ---

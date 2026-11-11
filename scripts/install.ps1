@@ -270,6 +270,26 @@ if (Test-Path -LiteralPath $CommandsSrc) {
     Write-Host ''
 }
 
+# agents -> ~/.claude/agents (Claude Code subagents)
+$AgentsSrc = Join-Path $RepoDir 'agents'
+if (Test-Path -LiteralPath $AgentsSrc) {
+    $agDest = Join-Path $HOME '.claude\agents'
+    if (-not (Test-Path -LiteralPath $agDest)) { New-Item -ItemType Directory -Force -Path $agDest | Out-Null }
+    Write-Host "Subagents ->  $agDest   (Claude Code only)"
+    foreach ($f in (Get-ChildItem -LiteralPath $AgentsSrc -Filter *.md -File)) {
+        $dst = Join-Path $agDest $f.Name
+        if (Test-Path -LiteralPath $dst) {
+            if (Test-FilesEqual $f.FullName $dst) { continue }
+            $bk = Join-Path $BackupDest 'agents'
+            New-Item -ItemType Directory -Force -Path $bk | Out-Null
+            Move-Item -LiteralPath $dst (Join-Path $bk $f.Name) -Force
+        }
+        Copy-Item -LiteralPath $f.FullName -Destination $dst -Force
+    }
+    Write-Host "  + subagents installed"
+    Write-Host ''
+}
+
 # hunt.ps1 -> ~/.claude/scripts + profile wiring
 if (-not (Test-Path -LiteralPath $ScriptsDest)) { New-Item -ItemType Directory -Force -Path $ScriptsDest | Out-Null }
 Copy-Item -LiteralPath $HuntSrc -Destination (Join-Path $ScriptsDest 'hunt.ps1') -Force
@@ -312,6 +332,9 @@ $entries = @()
 foreach ($d in (Get-ChildItem -LiteralPath $SkillsSource -Directory)) { $entries += "skills/$($d.Name)" }
 if (Test-Path -LiteralPath $CommandsSrc) {
     foreach ($f in (Get-ChildItem -LiteralPath $CommandsSrc -Filter *.md -File)) { $entries += "commands/$($f.Name)" }
+}
+if (Test-Path -LiteralPath $AgentsSrc) {
+    foreach ($f in (Get-ChildItem -LiteralPath $AgentsSrc -Filter *.md -File)) { $entries += "agents/$($f.Name)" }
 }
 $entries += 'scripts/hunt.ps1'
 Write-HuntFile $Manifest (($entries -join "`n") + "`n")

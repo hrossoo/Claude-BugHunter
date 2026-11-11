@@ -55,7 +55,7 @@ function hunt {
         return
     }
 
-    New-Item -ItemType Directory -Force -Path (Join-Path $dir 'findings'), (Join-Path $dir 'evidence') | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $dir 'findings'), (Join-Path $dir 'evidence'), (Join-Path $dir 'pocs'), (Join-Path $dir 'notes') | Out-Null
 
     $today = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
 
@@ -73,7 +73,9 @@ Files in this folder:
 - `findings/` — one markdown file per finding draft (naming: `finding-<NN>-<short-name>.md`)
 - `submissions.txt` — submission IDs tracker (used for chain cross-references)
 - `evidence/` — screenshots, HARs, raw transcripts (gitignored — never share)
-- `notes.md` — running notes, leads, dead ends, hypotheses
+- `notes.md` — running notes, leads, dead ends, hypotheses, coverage checklist, gadgets
+- `notes/app-book.md` — threat model / app "book" written by the `threat-modeler` agent
+- `pocs/` — self-contained PoC scripts + HTML pages and their run output (`poc-builder` agent)
 
 ## Workflow
 

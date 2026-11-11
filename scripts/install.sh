@@ -193,6 +193,24 @@ if [ -d "$REPO_DIR/commands" ]; then
   echo ""
 fi
 
+AGENTS_DEST="$HOME/.claude/agents"
+if [ -d "$REPO_DIR/agents" ]; then
+  mkdir -p "$AGENTS_DEST"
+  echo "Subagents →  $AGENTS_DEST   (Claude Code only)"
+  for agent_file in "$REPO_DIR/agents"/*.md; do
+    [ -e "$agent_file" ] || continue
+    agent_name="$(basename "$agent_file")"
+    if [ -f "$AGENTS_DEST/$agent_name" ] && [ ! -L "$AGENTS_DEST/$agent_name" ]; then
+      if cmp -s "$agent_file" "$AGENTS_DEST/$agent_name"; then continue; fi
+      mkdir -p "$BACKUP_DEST/agents"
+      mv "$AGENTS_DEST/$agent_name" "$BACKUP_DEST/agents/$agent_name"
+    fi
+    cp "$agent_file" "$AGENTS_DEST/$agent_name"
+  done
+  echo "  ✓ subagents installed"
+  echo ""
+fi
+
 SCRIPTS_DEST="$HOME/.claude/scripts"
 mkdir -p "$SCRIPTS_DEST"
 cp "$REPO_DIR/scripts/hunt.sh" "$SCRIPTS_DEST/hunt.sh"
@@ -235,6 +253,9 @@ mkdir -p "$MANIFEST_DIR"
   for d in "$REPO_DIR/skills"/*/; do echo "skills/$(basename "$d")"; done
   if [ -d "$REPO_DIR/commands" ]; then
     for c in "$REPO_DIR/commands"/*.md; do [ -e "$c" ] && echo "commands/$(basename "$c")"; done
+  fi
+  if [ -d "$REPO_DIR/agents" ]; then
+    for a in "$REPO_DIR/agents"/*.md; do [ -e "$a" ] && echo "agents/$(basename "$a")"; done
   fi
   echo "scripts/hunt.sh"
 } > "$MANIFEST"

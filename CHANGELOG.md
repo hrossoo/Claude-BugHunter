@@ -7,6 +7,23 @@ versioning is loosely [SemVer](https://semver.org/) at the bundle level.
 ## [Unreleased]
 
 ### Added
+- **Subagent pipeline from the Critical Thinking Bug Bounty podcast (Ep 170–199)**: nine
+  Claude Code subagents in `agents/`: `recon-ranker`, `threat-modeler`, `hunter`, `reflector`,
+  `escalator`, `validator`, `poc-builder`, `report-writer` and `skill-distiller`.
+  - Each one carries the shared scope and safety rules and an output contract based on the existing
+    engagement folder, recon manifest, engine state and ledger.
+  - New `docs/ctbb-claude-playbook.md` explains the reasoning, with per-agent guidelines and episode
+    citations.
+  - New templates: `docs/templates/CLAUDE.md.example` and an optional scope-restating "keep going"
+    Stop hook in `docs/templates/hooks/keep-going.md`.
+  - `skills/triage-validation` gains a "Class proof bars" table and evidence-integrity rules
+    (proxy history as ground truth, operation-ID evidence).
+  - `skills/report-writing/references/ai-drafted-reports.md` adds rules for AI-drafted reports.
+  - `/autopilot`, `/validate`, `/chain` and `/report` now delegate to the subagents.
+  - `install.sh` and `install.ps1` copy `agents/` to `~/.claude/agents/`; the uninstall manifest
+    tracks them.
+  - `hunt` scaffolds `pocs/` and `notes/`.
+  - `lint_skills.py` now lints agent front matter: single-line description, no pinned model IDs.
 - **Disclosed-report grounding, content-verified** — 28 `hunt-*` skills strengthened
   with cited public HackerOne disclosures. **433 distinct disclosed reports** are now
   individually cited across **36 pattern-library files** in `docs/disclosed-reports/`.

@@ -22,8 +22,12 @@ Checks per skills/<name>/SKILL.md:
 Exit code 0 = clean, 1 = at least one error. Warnings never fail the build.
 Stdlib only — no pip install needed in CI.
 
+Also lints agents/*.md subagent definitions (lint_agent): required keys, single-line
+description, no pinned model IDs, identifier denylist.
+
 Usage:
-    python3 scripts/lint_skills.py                 # lint all skills
+    python3 scripts/lint_skills.py                 # lint all skills + agents
+    python3 scripts/lint_skills.py agents          # lint just the subagents
     python3 scripts/lint_skills.py skills/hunt-xss  # lint specific dirs
 """
 import hashlib
@@ -216,6 +220,48 @@ def lint_skill(skill_dir, denylist):
     return errors, warnings
 
 
+AGENTS_DIR = os.path.join(REPO, "agents")
+AGENT_REQUIRED = ("name", "description")  # omit `tools` to inherit all tools incl. MCP
+
+
+def lint_agent(path, denylist):
+    """Lint a Claude Code subagent definition (agents/<name>.md).
+
+    Guards the failure mode from CTBB Ep 174/184: a multi-line / block-scalar
+    `description` gets silently dropped and the agent never triggers. We require a
+    single-line description (quoted if it contains ': ') and forbid pinning model IDs
+    in the repo (`model:` must be `inherit` or absent)."""
+    errors, warnings = [], []
+    fname = os.path.basename(path)
+    stem = fname[:-3]
+    with open(path, encoding="utf-8") as fh:
+        raw = fh.read()
+    fm, body, fm_err = split_frontmatter(raw)
+    if fm_err:
+        return [f"agents/{fname}: {fm_err}"], []
+    errors += [e.replace(stem + ":", f"agents/{fname}:", 1) for e in yaml_safety_errors(stem, raw)]
+    for k in AGENT_REQUIRED:
+        if not fm.get(k):
+            errors.append(f"agents/{fname}: frontmatter missing `{k}`")
+    n = fm.get("name", "")
+    if n and (not NAME_RE.match(n) or n != stem):
+        errors.append(f"agents/{fname}: `name` '{n}' must match ^[a-z0-9-]+$ and equal the filename")
+    desc = fm.get("description", "")
+    if desc[:1] in ("|", ">"):
+        errors.append(f"agents/{fname}: block-scalar description — use a single-line (quoted) description")
+    elif desc and len(desc.strip("\"'")) > MAX_DESC:
+        errors.append(f"agents/{fname}: description > {MAX_DESC} chars")
+    model = fm.get("model")
+    if model is not None and model.strip("\"'") != "inherit":
+        errors.append(f"agents/{fname}: `model: {model}` — use `inherit` (no model IDs pinned in repo files)")
+    if len(body.splitlines()) > MAX_BODY_LINES:
+        warnings.append(f"agents/{fname}: body > {MAX_BODY_LINES} lines")
+    if denylist:
+        if any(hashlib.sha256(sh.encode()).hexdigest() in denylist for sh in shingles(raw)):
+            errors.append(f"agents/{fname}: CLIENT-IDENTIFIER MATCH — remove engagement identifiers")
+    return errors, warnings
+
+
 def main(argv):
     denylist = load_denylist()
     if argv:
@@ -225,8 +271,22 @@ def main(argv):
                    if os.path.isdir(os.path.join(SKILLS_DIR, d))]
 
     all_errors, all_warnings = [], []
+    agent_files = []
+    if not argv and os.path.isdir(AGENTS_DIR):
+        agent_files = [os.path.join(AGENTS_DIR, f) for f in sorted(os.listdir(AGENTS_DIR)) if f.endswith(".md")]
+    for t in list(targets):
+        if t.endswith(".md") and os.path.isfile(t):
+            agent_files.append(t)
+            targets.remove(t)
+        elif os.path.abspath(t.rstrip("/")) == AGENTS_DIR:
+            agent_files += [os.path.join(AGENTS_DIR, f) for f in sorted(os.listdir(AGENTS_DIR)) if f.endswith(".md")]
+            targets.remove(t)
     for t in targets:
         e, w = lint_skill(t, denylist)
+        all_errors += e
+        all_warnings += w
+    for a in agent_files:
+        e, w = lint_agent(a, denylist)
         all_errors += e
         all_warnings += w
 
@@ -236,7 +296,7 @@ def main(argv):
         print(f"::error:: {e}" if os.environ.get("GITHUB_ACTIONS") else f"ERROR {e}")
 
     n = len(targets)
-    print(f"\nLinted {n} skill(s): {len(all_errors)} error(s), {len(all_warnings)} warning(s).")
+    print(f"\nLinted {n} skill(s) + {len(agent_files)} agent(s): {len(all_errors)} error(s), {len(all_warnings)} warning(s).")
     if not denylist:
         print("NOTE: no client-identifier denylist loaded (scripts/.identifier-denylist.sha256 missing).")
     return 1 if all_errors else 0

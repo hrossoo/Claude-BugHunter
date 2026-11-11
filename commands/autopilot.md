@@ -60,6 +60,38 @@ Runs the full hunt cycle without stopping for approval at each step:
 7. CHECKPOINT  Present to human for review
 ```
 
+## Subagent pipeline
+
+When the plugin's subagents are installed (`agents/`, also copied to `~/.claude/agents/` by
+`install.sh`), each step above is delegated to a dedicated subagent. Full rationale and sources:
+`docs/ctbb-claude-playbook.md`.
+
+| Step | Subagent | Contract |
+|---|---|---|
+| RECON + RANK | `recon-ranker` | Gets *all* the JS (maps, lazy chunks), extracts endpoints / GraphQL ops / hidden headers, diffs vs last run, seeds a coverage worklist of `(endpoint, method, auth_role)` rows |
+| (new) MODEL | `threat-modeler` | Writes `notes/app-book.md` + narrow hypotheses. In `--paranoid`, stop here so the human reads the book |
+| HUNT | `hunter` × `--parallel` | One bug class + explicit rows per instance; claims rows, append-only results, op-ID on every request, **cannot finish with untested claimed rows** |
+| (new) REFLECT | `reflector` | Labels each candidate gadget / lead / finding; gadgets → `notes.md` `## Gadgets` for the human to chain; fresh-eyes review of "impossible" dead ends |
+| (new) ESCALATE | `escalator` | Tries to raise severity on the *same* finding before validation |
+| VALIDATE | `validator` | Skeptical-triager replay, op-ID evidence rule, class proof bars, triage council, 7-Question Gate |
+| REPORT | `poc-builder` → `report-writer` | Self-checking PoC (`curl -s … \| python3` or autorun HTML), then a PoC-first concise draft from the human's summary |
+| (after) LEARN | `skill-distiller` | Proposes CLAUDE.md gadget/insight entries, skill edits and ledger updates for approval |
+
+**Who orchestrates.** Subagents cannot launch other subagents or ask you questions mid-run, so the
+**main session runs every step**: it dispatches each agent, reads the files it wrote (each ends its
+output with `files written:` / `next:`), dispatches the next one, and relays any returned question to
+you. Agents that need Burp/Caido/browser MCP (recon-ranker, threat-modeler, hunter, escalator,
+validator, poc-builder) omit `tools:` so they inherit MCP tools.
+
+**Coverage gate.** HUNT is not complete while any coverage row is `open` or `in_progress`. Rows end
+as `tested-negative`, `candidate`, or `blocked:<reason>` — "blocked: auth broken" is surfaced at the
+checkpoint, never silently counted as coverage.
+
+**Keep-going rule.** If a hunter stops early, re-prompt it with the scope restated: *keep going if
+you're on a good lead or have untested rows — only hosts in scope.md, no write/delete to prove
+impact, all traffic through the proxy.* "Keep going" never means leaving scope. Optional unattended
+version: `docs/templates/hooks/keep-going.md`.
+
 ## Safety Guarantees
 
 - **Every URL** is checked against the scope allowlist before any request

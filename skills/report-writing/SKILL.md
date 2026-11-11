@@ -25,6 +25,9 @@ GOOD: "An attacker can access any user's order history by changing the user_id
 
 ---
 
+> **AI-drafted reports:** follow `references/ai-drafted-reports.md` — PoC one-liner first in Steps to
+> Reproduce, attacker/victim naming, no filler. The `report-writer` and `poc-builder` subagents apply it.
+
 ## TITLE FORMULA
 
 ```

@@ -13,6 +13,14 @@ Run `/validate` first. All 4 gates must pass before running this command.
 
 Never write a report before validating. N/A submissions hurt your validity ratio.
 
+## Subagents
+
+If installed, run `poc-builder` first (stdlib-only `curl -s <url> | python3` script or autorun HTML,
+proxy-able, `X-POC-Actor` headers, VULNERABLE / NOT VULNERABLE verdict, run exactly as the triager
+will), then `report-writer` with **your own 2–5 line summary**. The PoC one-liner goes first in Steps
+to Reproduce. Rules: `skills/report-writing/references/ai-drafted-reports.md`. Reports are never
+auto-submitted.
+
 ## Usage
 
 ```
